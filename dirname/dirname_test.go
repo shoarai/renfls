@@ -22,25 +22,26 @@ func TestMain(m *testing.M) {
 }
 
 func TestRenameAndMoveFile(t *testing.T) {
-	dir := getTestDataDir()
+	root := getTestDataDir()
 
 	tests := []struct {
-		oldDir, oldFileName, newDir, newFileName, wantFileName string
+		oldPath, newDir, newFileName, wantFileName string
 	}{
-		{dir + "/dir1", "text.txt", dir, "new", "new.txt"},
-		{dir + "/dir1", "music.mp3", dir, "new", "new.mp3"},
-		{dir + "/dir1", ".no", dir, "new", "new.no"},
-		{dir + "/dir1", "file", dir, "new", "new"},
-		{dir + "/dir2", "a.txt", dir, "newText", "newText.txt"},
-		{dir + "/dir2", "b.txt", dir, "newText", "newText-1.txt"},
-		{dir + "/dir2", "c.txt", dir, "newText", "newText-2.txt"},
-		{dir + "/dir3", "dir3-1", dir, "newDir", "newDir"},
-		{dir + "/dir3", "dir3-2", dir, "newDir", "newDir-1"},
+		{root + "/dir1/text.txt", root, "new", "new.txt"},
+		{root + "/dir1/music.mp3", root, "new", "new.mp3"},
+		{root + "/dir1/.no", root, "new", "new.no"},
+		{root + "/dir1/file", root, "new", "new"},
+		{root + "/dir2/a.txt", root, "newText", "newText.txt"},
+		{root + "/dir2/b.txt", root, "newText", "newText-1.txt"},
+		{root + "/dir2/c.txt", root, "newText", "newText-2.txt"},
+		// Rename folder
+		{root + "/dir3/dir3-1", root, "newDir", "newDir"},
+		{root + "/dir3/dir3-2", root, "newDir", "newDir-1"},
 	}
 
 	for _, test := range tests {
 		filePath, err := dirname.RenameAndMoveFile(
-			test.oldDir, test.oldFileName, test.newDir, test.newFileName,
+			test.oldPath, test.newDir, test.newFileName,
 		)
 
 		if err != nil {
@@ -48,16 +49,15 @@ func TestRenameAndMoveFile(t *testing.T) {
 			continue
 		}
 
-		wantFileName := test.newDir + "/" + test.wantFileName
-		if filePath != wantFileName {
-			t.Errorf("RenameAndMoveFile() = %s, want %s", filePath, wantFileName)
+		wantNewPath := filepath.Join(test.newDir, test.wantFileName)
+		if !isFileExisting(wantNewPath) {
+			t.Errorf("The new file didn't be created.")
 		}
-
-		if isFileExisting(test.oldDir + "/" + test.oldFileName) {
+		if isFileExisting(test.oldPath) {
 			t.Errorf("The old file didn't be removed.")
 		}
-		if !isFileExisting(wantFileName) {
-			t.Errorf("The new file didn't be created.")
+		if filePath != wantNewPath {
+			t.Errorf("RenameAndMoveFile() = %s, want %s", filePath, wantNewPath)
 		}
 	}
 }

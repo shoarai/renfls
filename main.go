@@ -6,6 +6,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 
 	"github.com/shoarai/toDirName/dirname"
@@ -14,6 +15,8 @@ import (
 const toDir = "toDirNameDirectories"
 
 func main() {
+	createTestDir()
+
 	entry, err := os.Stat(toDir)
 	if err != nil {
 		os.Mkdir(toDir, 0777)
@@ -26,6 +29,11 @@ func main() {
 	}
 
 	walkDirectory(toDir)
+}
+
+func createTestDir() {
+	os.RemoveAll(toDir)
+	exec.Command("cp", "-r", "dirname/testdata", toDir).Run()
 }
 
 func walkDirectory(dir string) {
@@ -43,15 +51,15 @@ func dirNameToFileName(dir, toDir, name string) {
 	// TODO: Ignore "." file.
 	// TODO: Make log file.
 
-	err := dirname.RenameAndMoveFilesInDir(dir, toDir, name)
+	err := dirname.RenameAndMoveFilesInDirRecursive(dir, toDir, name)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "RenameAndMoveFilesInDir(): %v\n", err)
 		return
 	}
 
-	err = os.RemoveAll(dir)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "RemoveAll(): %v\n", err)
-		return
-	}
+	// err = os.RemoveAll(dir)
+	// if err != nil {
+	// 	fmt.Fprintf(os.Stderr, "RemoveAll(): %v\n", err)
+	// 	return
+	// }
 }
