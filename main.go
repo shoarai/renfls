@@ -11,8 +11,21 @@ import (
 	"github.com/shoarai/toDirName/dirname"
 )
 
+const toDir = "toDirNameDirectories"
+
 func main() {
-	walkDirectory("./todirname")
+	entry, err := os.Stat(toDir)
+	if err != nil {
+		os.Mkdir(toDir, 0777)
+		fmt.Printf("Place directories in the %q folder.\n", toDir)
+		return
+	}
+	if !entry.IsDir() {
+		fmt.Printf("The %q isn't folder.\n", toDir)
+		return
+	}
+
+	walkDirectory(toDir)
 }
 
 func walkDirectory(dir string) {
