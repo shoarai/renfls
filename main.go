@@ -1,71 +1,44 @@
 // Copyright © 2017 shoarai
 
-// The DirNameToFileName re-name the files in a directory to the directory.
+// The ToDirName re-name the files in a directory to the directory.
 package main
 
 import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"strings"
+
+	"github.com/shoarai/toDirName/dirname"
 )
 
 func main() {
-	roots := os.Args[1:]
-	if len(roots) == 0 {
-		roots = []string{"./monitored"}
-	}
-
-	for _, root := range roots {
-		walkDirectory(root)
-	}
+	walkDirectory("./todirname")
 }
 
 func walkDirectory(dir string) {
-	for _, entry := range getEntry(dir) {
-		if entry.IsDir() {
-			var folderName = entry.Name()
-			subdir := filepath.Join(dir, entry.Name())
-			dirNameToFileName(subdir, folderName)
+	for _, entry := range dirname.GetFileInfoInDir(dir) {
+		if !entry.IsDir() {
+			continue
 		}
+		var folderName = entry.Name()
+		subDir := filepath.Join(dir, folderName)
+		dirNameToFileName(subDir, dir, folderName)
 	}
 }
 
-func dirNameToFileName(dir string, name string) {
-	// TODO: Add suffix in case of same extension.
+func dirNameToFileName(dir, toDir, name string) {
 	// TODO: Ignore "." file.
 	// TODO: Make log file.
-	// TODO: Remove the old directory.
-	for _, entry := range getEntry(dir) {
-		if !entry.IsDir() {
-			oldFileName := entry.Name()
-			pos := strings.LastIndex(oldFileName, ".")
-			extension := oldFileName[pos:]
 
-			newFileName := name + extension
-
-			oldFilePath := dir + "/" + oldFileName
-			newFilePath := dir + "/../" + newFileName
-			os.Rename(oldFilePath, newFilePath)
-
-			fmt.Println(dir + "/")
-			fmt.Println("  ", oldFileName, "->", newFileName)
-		}
-	}
-}
-
-func getEntry(dir string) []os.FileInfo {
-	f, err := os.Open(dir)
+	err := dirname.RenameAndMoveFilesInDir(dir, toDir, name)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "du: %v\n", err)
-		return nil
+		fmt.Fprintf(os.Stderr, "RenameAndMoveFilesInDir(): %v\n", err)
+		return
 	}
-	defer f.Close()
 
-	entries, err := f.Readdir(0) // 0 => no limit; read all entries
+	err = os.RemoveAll(dir)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "du: %v\n", err)
-		// Don't return: Readdir may return partial results.
+		fmt.Fprintf(os.Stderr, "RemoveAll(): %v\n", err)
+		return
 	}
-	return entries
 }
