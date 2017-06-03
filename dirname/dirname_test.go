@@ -5,6 +5,7 @@ package dirname_test
 import (
 	"os"
 	"os/exec"
+	"path/filepath"
 	"testing"
 
 	"github.com/shoarai/toDirName/dirname"
@@ -63,7 +64,9 @@ func TestRenameAndMoveFile(t *testing.T) {
 
 func createTestDir() {
 	dir, _ := os.Getwd()
-	exec.Command("cp", "-r", dir+"/"+testData, dir+"/"+tmpTestData).Run()
+	exec.Command("cp", "-r",
+		filepath.Join(dir, testData), filepath.Join(dir, tmpTestData),
+	).Run()
 }
 
 func removeTestDir() {
@@ -73,7 +76,7 @@ func removeTestDir() {
 
 func getTestDataDir() string {
 	dir, _ := os.Getwd()
-	return dir + "/" + tmpTestData
+	return filepath.Join(dir, tmpTestData)
 }
 
 func isFileExisting(dir string) bool {

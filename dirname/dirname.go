@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"math"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 )
@@ -13,6 +14,11 @@ import (
 // RenameAndMoveFile renames a file and moves it to directory.
 func RenameAndMoveFile(
 	oldDir, oldFileName, newDir, newFileName string) (string, error) {
+	oldFilePath := filepath.Join(oldDir, oldFileName)
+	if _, err := os.Stat(oldFilePath); err != nil {
+		return "", fmt.Errorf("The old file is not existing %s", oldFilePath)
+	}
+
 	pos := strings.LastIndex(oldFileName, ".")
 	var extension string
 	if pos >= 0 {
@@ -26,30 +32,28 @@ func RenameAndMoveFile(
 			suffix = "-" + strconv.Itoa(i)
 		}
 
-		newFilePath = newDir + "/" + newFileName + suffix + extension
+		newFilePath = filepath.Join(newDir, newFileName+suffix+extension)
 		fmt.Println(newFilePath)
 		if _, err := os.Stat(newFilePath); err != nil {
 			break
 		}
 	}
 
-	err := os.Rename(oldDir+"/"+oldFileName, newFilePath)
-	if err != nil {
+	if err := os.Rename(oldFilePath, newFilePath); err != nil {
 		return "", err
 	}
 	return newFilePath, nil
 }
 
-func joinDir(dirs ...string) string {
-	var fullDir string
-	separator := "/"
-	for _, dir := range dirs {
-		fullDir += dir
-		if !strings.HasSuffix(dir, separator) {
-			dir += "/"
+// RenameAndMoveFilesInDir all renames files in the directory and moves it.
+func RenameAndMoveFilesInDir(dir, newDir, newFileName string) error {
+	for _, entry := range GetFileInfoInDir(dir) {
+		_, err := RenameAndMoveFile(dir, entry.Name(), newDir, newFileName)
+		if err != nil {
+			return err
 		}
 	}
-	return fullDir
+	return nil
 }
 
 // GetFileInfoInDir gets information for files in a directory.
