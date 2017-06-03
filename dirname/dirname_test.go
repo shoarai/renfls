@@ -10,8 +10,11 @@ import (
 	"github.com/shoarai/toDirName/dirname"
 )
 
+const testData = "testdata"
+const tmpTestData = "." + testData
+
 func TestMain(m *testing.M) {
-	copyTestDir()
+	createTestDir()
 	code := m.Run()
 	removeTestDir()
 	os.Exit(code)
@@ -21,9 +24,13 @@ func TestRenameAndMoveFile(t *testing.T) {
 	dir := getTestDataDir()
 
 	tests := []struct {
-		oldDir, oldFileName, newDir, newFileName, extension string
+		oldDir, oldFileName, newDir, newFileName, wantFileName string
 	}{
-		{dir + "/dir1", "text.txt", dir, "newName", ".txt"},
+		{dir + "/dir1", "text.txt", dir, "new", "new.txt"},
+		{dir + "/dir1", "music.mp3", dir, "new", "new.mp3"},
+		{dir + "/dir2", "a.txt", dir, "newText", "newText.txt"},
+		{dir + "/dir2", "b.txt", dir, "newText", "newText-1.txt"},
+		{dir + "/dir2", "c.txt", dir, "newText", "newText-2.txt"},
 	}
 
 	for _, test := range tests {
@@ -35,23 +42,23 @@ func TestRenameAndMoveFile(t *testing.T) {
 			continue
 		}
 
-		if !isExisting(filePath) {
-			t.Errorf("New file create error: %s", err)
+		wantFileName := test.newDir + "/" + test.wantFileName
+		if filePath != wantFileName {
+			t.Errorf("RenameAndMoveFile() = %s, want %s", filePath, wantFileName)
 		}
-		if isExisting(test.oldDir + "/" + test.oldFileName) {
-			t.Errorf("New file create error: %s", err)
+
+		if isFileExisting(test.oldDir + "/" + test.oldFileName) {
+			t.Errorf("The old file didn't be removed.")
+		}
+		if !isFileExisting(wantFileName) {
+			t.Errorf("The new file didn't be created.")
 		}
 	}
 }
 
-func getTestDataDir() string {
+func createTestDir() {
 	dir, _ := os.Getwd()
-	return dir + "/.testdata"
-}
-
-func copyTestDir() {
-	dir, _ := os.Getwd()
-	exec.Command("cp", "-r", dir+"/testdata", dir+"/.testdata").Run()
+	exec.Command("cp", "-r", dir+"/"+testData, dir+"/"+tmpTestData).Run()
 }
 
 func removeTestDir() {
@@ -59,7 +66,12 @@ func removeTestDir() {
 	os.RemoveAll(dir)
 }
 
-func isExisting(dir string) bool {
+func getTestDataDir() string {
+	dir, _ := os.Getwd()
+	return dir + "/" + tmpTestData
+}
+
+func isFileExisting(dir string) bool {
 	_, err := os.Stat(dir)
 	return err == nil
 }
