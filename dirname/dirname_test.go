@@ -28,15 +28,20 @@ func TestRenameAndMoveFile(t *testing.T) {
 	}{
 		{dir + "/dir1", "text.txt", dir, "new", "new.txt"},
 		{dir + "/dir1", "music.mp3", dir, "new", "new.mp3"},
+		{dir + "/dir1", ".no", dir, "new", "new.no"},
+		{dir + "/dir1", "file", dir, "new", "new"},
 		{dir + "/dir2", "a.txt", dir, "newText", "newText.txt"},
 		{dir + "/dir2", "b.txt", dir, "newText", "newText-1.txt"},
 		{dir + "/dir2", "c.txt", dir, "newText", "newText-2.txt"},
+		{dir + "/dir3", "dir3-1", dir, "newDir", "newDir"},
+		{dir + "/dir3", "dir3-2", dir, "newDir", "newDir-1"},
 	}
 
 	for _, test := range tests {
 		filePath, err := dirname.RenameAndMoveFile(
 			test.oldDir, test.oldFileName, test.newDir, test.newFileName,
 		)
+
 		if err != nil {
 			t.Errorf("RenameAndMoveFile(%v) error: %s\n", test, err)
 			continue

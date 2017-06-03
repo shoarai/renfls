@@ -14,7 +14,10 @@ import (
 func RenameAndMoveFile(
 	oldDir, oldFileName, newDir, newFileName string) (string, error) {
 	pos := strings.LastIndex(oldFileName, ".")
-	extension := oldFileName[pos:]
+	var extension string
+	if pos >= 0 {
+		extension = oldFileName[pos:]
+	}
 
 	var newFilePath string
 	for i := 0; i < math.MaxInt16; i++ {
