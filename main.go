@@ -5,6 +5,7 @@ package main
 
 import (
 	"fmt"
+	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -15,20 +16,25 @@ import (
 const toDir = "toDirNameDirectories"
 
 func main() {
+	// DEBUG:
 	createTestDir()
 
-	entry, err := os.Stat(toDir)
-	if err != nil {
-		os.Mkdir(toDir, 0777)
-		fmt.Printf("Place directories in the %q folder.\n", toDir)
-		return
-	}
-	if !entry.IsDir() {
-		fmt.Printf("The %q isn't folder.\n", toDir)
+	if entry, err := os.Stat(toDir); err != nil || !entry.IsDir() {
+		fmt.Printf("Make a directory and place folders in it: %q\n", toDir)
 		return
 	}
 
-	walkDirectory(toDir)
+	workingDir := "." + toDir
+	if _, err := os.Stat(workingDir); err == nil {
+		fmt.Printf("The directory is already existing: %q\n", workingDir)
+		return
+	}
+	os.Rename(toDir, workingDir)
+	os.Mkdir(toDir, 0777)
+
+	renameToDirName(workingDir, toDir)
+
+	os.RemoveAll(workingDir)
 }
 
 func createTestDir() {
@@ -36,30 +42,20 @@ func createTestDir() {
 	exec.Command("cp", "-r", "dirname/testdata", toDir).Run()
 }
 
-func walkDirectory(dir string) {
-	for _, entry := range dirname.GetFileInfoInDir(dir) {
-		if !entry.IsDir() {
-			continue
-		}
-		var folderName = entry.Name()
-		subDir := filepath.Join(dir, folderName)
-		dirNameToFileName(subDir, dir, folderName)
-	}
-}
-
-func dirNameToFileName(dir, toDir, name string) {
-	// TODO: Ignore "." file.
-	// TODO: Make log file.
-
-	err := dirname.RenameAndMoveFilesInDirRecursive(dir, toDir, name)
+func renameToDirName(dir, newDir string) error {
+	entries, err := ioutil.ReadDir(dir)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "RenameAndMoveFilesInDir(): %v\n", err)
-		return
+		return err
 	}
 
-	// err = os.RemoveAll(dir)
-	// if err != nil {
-	// 	fmt.Fprintf(os.Stderr, "RemoveAll(): %v\n", err)
-	// 	return
-	// }
+	for _, entry := range entries {
+		fmt.Println(entry.Name())
+		// if !entry.IsDir() {
+		// 	continue
+		// }
+		dirName := entry.Name()
+		path := filepath.Join(dir, dirName)
+		dirname.RenameAndMoveFileAll(path, newDir, dirName)
+	}
+	return nil
 }
