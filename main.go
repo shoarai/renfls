@@ -49,10 +49,6 @@ func renameToDirName(dir, newDir string) error {
 	}
 
 	for _, entry := range entries {
-		fmt.Println(entry.Name())
-		// if !entry.IsDir() {
-		// 	continue
-		// }
 		dirName := entry.Name()
 		path := filepath.Join(dir, dirName)
 		dirname.RenameAndMoveFileAll(path, newDir, dirName)

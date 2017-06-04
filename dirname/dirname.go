@@ -47,12 +47,7 @@ func RenameAndMoveFileAll(root, newDir, newFileName string) error {
 			return nil
 		}
 
-		newPath, _ := RenameAndMoveFile(path, newDir, newFileName)
-		fmt.Println("")
-		fmt.Println(path)
-		fmt.Println("->")
-		fmt.Println(newPath)
-		fmt.Println(newFileName)
+		RenameAndMoveFile(path, newDir, newFileName)
 		return nil
 	})
 }
