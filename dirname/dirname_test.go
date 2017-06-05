@@ -25,9 +25,9 @@ func TestRenameAndMoveFile(t *testing.T) {
 	testDataDir := getTestDataDir()
 
 	for _, test := range []struct {
-		oldPath, newDir, newFileName, wantFileName string
+		oldPath, newDir, newName, wantFileName string
 	}{
-		//Rename file
+		// Rename file
 		{"/dir1/text.txt", ".", "new1", "new1.txt"},
 		{"/dir1/image.jpg", ".", "new1", "new1.jpg"},
 		{"/dir1/ミュージック　.mp3", ".", "　新　", "　新　.mp3"},
@@ -43,29 +43,29 @@ func TestRenameAndMoveFile(t *testing.T) {
 		test.oldPath = filepath.Join(testDataDir, test.oldPath)
 		test.newDir = filepath.Join(testDataDir, test.newDir)
 
-		filePath, err := dirname.RenameAndMoveFile(
-			test.oldPath, test.newDir, test.newFileName,
+		filePath, err := dirname.Rename(
+			test.oldPath, test.newDir, test.newName,
 		)
 
 		if err != nil {
-			t.Errorf("RenameAndMoveFile(%v) error: %s\n", test, err)
+			t.Errorf("Rename(%v) error: %s\n", test, err)
 			continue
 		}
 
 		wantNewPath := filepath.Join(test.newDir, test.wantFileName)
 		if !isFileExisting(wantNewPath) {
-			t.Errorf("The new file didn't be created.")
+			t.Errorf("The new file %q didn't be created.", wantNewPath)
 		}
 		if isFileExisting(test.oldPath) {
-			t.Errorf("The old file didn't be removed.")
+			t.Errorf("The old file %q didn't be removed.", test.oldPath)
 		}
 		if filePath != wantNewPath {
-			t.Errorf("RenameAndMoveFile() = %s, want %s", filePath, wantNewPath)
+			t.Errorf("Rename() = %s, want %s", filePath, wantNewPath)
 		}
 	}
 }
 
-func TestRenameAndMoveFileAll(t *testing.T) {
+func TestRenameAll(t *testing.T) {
 	testDataDir := getTestDataDir()
 
 	for _, test := range []struct {
@@ -73,22 +73,22 @@ func TestRenameAndMoveFileAll(t *testing.T) {
 		wantFileNames             []string
 	}{
 		{"dir4", ".", "new4",
-			[]string{"new4.txt", "new4-1.txt"}},
+			[]string{"new4.txt", "new4-1.txt", "new4.jpg"}},
 	} {
 		test.root = filepath.Join(testDataDir, test.root)
 		test.newDir = filepath.Join(testDataDir, test.newDir)
 
-		err := dirname.RenameAndMoveFileAll(test.root, test.newDir, test.newFileName)
+		err := dirname.RenameAll(test.root, test.newDir, test.newFileName)
 
 		if err != nil {
-			t.Errorf("RenameAndMoveFileAll(%v) error: %s\n", test, err)
+			t.Errorf("RenameAll(%v) error: %s\n", test, err)
 			continue
 		}
 
 		for _, wantFileName := range test.wantFileNames {
 			wantNewPath := filepath.Join(test.newDir, wantFileName)
 			if !isFileExisting(wantNewPath) {
-				t.Errorf("The new file didn't be created.")
+				t.Errorf("The new path %q didn't be created.", wantNewPath)
 			}
 		}
 	}

@@ -7,25 +7,26 @@ import (
 	"math"
 	"os"
 	"path/filepath"
-	"strconv"
 )
 
-// RenameAndMoveFile renames a file and moves it to directory.
-func RenameAndMoveFile(oldPath, newDir, newFileName string) (string, error) {
+const fileSuffix = "-%d"
+
+// Rename renames a file or a directory and moves it to a directory.
+func Rename(oldPath, newDir, newName string) (string, error) {
 	if !isFileExisting(oldPath) {
 		return "", fmt.Errorf("oldPath %q is not existing", oldPath)
 	}
 
-	_, oldFileName := filepath.Split(oldPath)
-	extension := filepath.Ext(oldFileName)
+	_, oldName := filepath.Split(oldPath)
+	ext := filepath.Ext(oldName)
 
 	var newPath string
 	for i := 0; i < math.MaxInt16; i++ {
-		var suffix string
+		var suff string
 		if i != 0 {
-			suffix = "-" + strconv.Itoa(i)
+			suff = fmt.Sprintf(fileSuffix, i)
 		}
-		newPath = filepath.Join(newDir, newFileName+suffix+extension)
+		newPath = filepath.Join(newDir, newName+suff+ext)
 		if !isFileExisting(newPath) {
 			break
 		}
@@ -37,8 +38,8 @@ func RenameAndMoveFile(oldPath, newDir, newFileName string) (string, error) {
 	return newPath, nil
 }
 
-// RenameAndMoveFileAll renames files in root and moves these to a directory.
-func RenameAndMoveFileAll(root, newDir, newFileName string) error {
+// RenameAll renames all files in root and moves these to a directory.
+func RenameAll(root, newDir, newFileName string) error {
 	return filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
@@ -46,8 +47,7 @@ func RenameAndMoveFileAll(root, newDir, newFileName string) error {
 		if info.IsDir() {
 			return nil
 		}
-
-		RenameAndMoveFile(path, newDir, newFileName)
+		Rename(path, newDir, newFileName)
 		return nil
 	})
 }

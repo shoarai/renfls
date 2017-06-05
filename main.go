@@ -51,7 +51,7 @@ func renameToDirName(dir, newDir string) error {
 	for _, entry := range entries {
 		dirName := entry.Name()
 		path := filepath.Join(dir, dirName)
-		dirname.RenameAndMoveFileAll(path, newDir, dirName)
+		dirname.RenameAll(path, newDir, dirName)
 	}
 	return nil
 }
