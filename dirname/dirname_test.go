@@ -3,16 +3,15 @@
 package dirname_test
 
 import (
+	"fmt"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"testing"
 
 	"github.com/shoarai/toDirName/dirname"
 )
 
-const testData = "testdata"
-const tmpTestData = "." + testData
+const tmpTestData = ".testdata"
 
 func TestMain(m *testing.M) {
 	createTestDir()
@@ -21,26 +20,29 @@ func TestMain(m *testing.M) {
 	os.Exit(code)
 }
 
-func TestRenameAndMoveFile(t *testing.T) {
+func TestRename(t *testing.T) {
 	testDataDir := getTestDataDir()
 
 	for _, test := range []struct {
 		oldPath, newDir, newName, wantFileName string
 	}{
 		// Rename file
-		{"/dir1/text.txt", ".", "new1", "new1.txt"},
-		{"/dir1/image.jpg", ".", "new1", "new1.jpg"},
-		{"/dir1/ミュージック　.mp3", ".", "　新　", "　新　.mp3"},
-		{"/dir1/.no", ".", "new1", "new1.no"},
-		{"/dir1/file", ".", "new1", "new1"},
-		{"/dir2/a.txt", ".", "new text2", "new text2.txt"},
-		{"/dir2/b.txt", ".", "new text2", "new text2-1.txt"},
-		{"/dir2/c.txt", ".", "new text2", "new text2-2.txt"},
+		{"dir1/text.txt", ".", "new1", "new1.txt"},
+		{"dir1/image.jpg", ".", "new1", "new1.jpg"},
+		{"dir1/ミュージック　.mp3", ".", "　新　", "　新　.mp3"},
+		{"dir1/.no", ".", "new1", "new1.no"},
+		{"dir1/file", ".", "new1", "new1"},
+		{"dir2/a.txt", ".", "new text2", "new text2.txt"},
+		{"dir2/b.txt", ".", "new text2", "new text2-1.txt"},
+		{"dir2/c.txt", ".", "new text2", "new text2-2.txt"},
 		// Rename folder
-		{"/dir3/dir3-1", ".", "newDir 3", "newDir 3"},
-		{"/dir3/dir3-2", ".", "newDir 3", "newDir 3-1"},
+		{"dir3/dir3-1", ".", "newDir 3", "newDir 3"},
+		{"dir3/dir3-2", ".", "newDir 3", "newDir 3-1"},
 	} {
+		// Craete test data
 		test.oldPath = filepath.Join(testDataDir, test.oldPath)
+		createAll(test.oldPath)
+
 		test.newDir = filepath.Join(testDataDir, test.newDir)
 
 		filePath, err := dirname.Rename(
@@ -49,7 +51,6 @@ func TestRenameAndMoveFile(t *testing.T) {
 
 		if err != nil {
 			t.Errorf("Rename(%v) error: %s\n", test, err)
-			continue
 		}
 
 		wantNewPath := filepath.Join(test.newDir, test.wantFileName)
@@ -62,6 +63,8 @@ func TestRenameAndMoveFile(t *testing.T) {
 		if filePath != wantNewPath {
 			t.Errorf("Rename() = %s, want %s", filePath, wantNewPath)
 		}
+
+		// clearTestDir()
 	}
 }
 
@@ -70,40 +73,113 @@ func TestRenameAll(t *testing.T) {
 
 	for _, test := range []struct {
 		root, newDir, newFileName string
+		files                     []string
 		wantFileNames             []string
 	}{
 		{"dir4", ".", "new4",
+			[]string{"dir4-1/text.txt", "dir4-2/text.txt", "dir4-2/画像.jpg"},
 			[]string{"new4.txt", "new4-1.txt", "new4.jpg"}},
 	} {
 		test.root = filepath.Join(testDataDir, test.root)
+		createAlls(test.root, test.files)
+
 		test.newDir = filepath.Join(testDataDir, test.newDir)
 
 		err := dirname.RenameAll(test.root, test.newDir, test.newFileName)
 
 		if err != nil {
 			t.Errorf("RenameAll(%v) error: %s\n", test, err)
-			continue
 		}
 
 		for _, wantFileName := range test.wantFileNames {
 			wantNewPath := filepath.Join(test.newDir, wantFileName)
 			if !isFileExisting(wantNewPath) {
-				t.Errorf("The new path %q didn't be created.", wantNewPath)
+				t.Errorf("The new path %q didn't be created.\n", wantNewPath)
 			}
 		}
+
+		clearTestDir()
+	}
+}
+func TestRenamePattern(t *testing.T) {
+	testDataDir := getTestDataDir()
+
+	for _, test := range []struct {
+		root, newDir, newFileName, pattern string
+		files                              []string
+		wantFileNames                      []string
+		wantRemovedFileNames               []string
+	}{
+		{"dir4", ".", "new4", `text*`,
+			[]string{"dir4-1/text.txt", "dir4-2/text.txt", "dir4-2/画像.jpg"},
+			[]string{"new4.txt", "new4-1.txt"},
+			[]string{"new4.jpg"}},
+	} {
+		test.root = filepath.Join(testDataDir, test.root)
+		createAlls(test.root, test.files)
+
+		test.newDir = filepath.Join(testDataDir, test.newDir)
+
+		err := dirname.RenamePattern(
+			test.root, test.newDir, test.newFileName, test.pattern)
+
+		if err != nil {
+			t.Errorf("RenameAll(%v) error: %s\n", test, err)
+		}
+
+		for _, wantFileName := range test.wantFileNames {
+			wantNewPath := filepath.Join(test.newDir, wantFileName)
+			if !isFileExisting(wantNewPath) {
+				t.Errorf("The new path %q didn't be created.\n", wantNewPath)
+			}
+		}
+
+		for _, wantRemovedFileName := range test.wantRemovedFileNames {
+			wantNewPath := filepath.Join(test.newDir, wantRemovedFileName)
+			if isFileExisting(wantNewPath) {
+				t.Errorf("The path not matched %q is created.\n", wantNewPath)
+			}
+		}
+
+		clearTestDir()
+	}
+}
+
+func createAll(path string) {
+	dir, _ := filepath.Split(path)
+
+	if err := os.MkdirAll(dir, 0777); err != nil {
+		fmt.Printf("clearTestDir() error: %s\n", err)
+	}
+	if _, err := os.Create(path); err != nil {
+		fmt.Printf("clearTestDir() error: %s\n", err)
+	}
+}
+
+func createAlls(root string, path []string) {
+	for _, p := range path {
+		createAll(filepath.Join(root, p))
 	}
 }
 
 func createTestDir() {
 	dir, _ := os.Getwd()
-	exec.Command("cp", "-r",
-		filepath.Join(dir, testData), filepath.Join(dir, tmpTestData),
-	).Run()
+	os.Mkdir(filepath.Join(dir, getTestDataDir()), 0777)
 }
 
 func removeTestDir() {
 	dir := getTestDataDir()
 	os.RemoveAll(dir)
+}
+
+func clearTestDir() {
+	dir := getTestDataDir()
+	if err := os.RemoveAll(dir); err != nil {
+		fmt.Printf("clearTestDir() error: %s\n", err)
+	}
+	if err := os.Mkdir(dir, 0777); err != nil {
+		fmt.Printf("clearTestDir() error: %s\n", err)
+	}
 }
 
 func getTestDataDir() string {
