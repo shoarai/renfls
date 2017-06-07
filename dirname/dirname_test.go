@@ -3,7 +3,6 @@
 package dirname_test
 
 import (
-	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
@@ -11,7 +10,10 @@ import (
 	"github.com/shoarai/toDirName/dirname"
 )
 
-const tmpTestData = ".testdata"
+const (
+	tmpTestData = ".testdata"
+	fileMode    = 0777
+)
 
 func TestMain(m *testing.M) {
 	createTestDir()
@@ -21,8 +23,6 @@ func TestMain(m *testing.M) {
 }
 
 func TestRename(t *testing.T) {
-	testDataDir := getTestDataDir()
-
 	for _, test := range []struct {
 		oldPath, newDir, newName, wantFileName string
 	}{
@@ -39,11 +39,7 @@ func TestRename(t *testing.T) {
 		{"dir3/dir3-1", ".", "newDir 3", "newDir 3"},
 		{"dir3/dir3-2", ".", "newDir 3", "newDir 3-1"},
 	} {
-		// Craete test data
-		test.oldPath = filepath.Join(testDataDir, test.oldPath)
 		createAll(test.oldPath)
-
-		test.newDir = filepath.Join(testDataDir, test.newDir)
 
 		filePath, err := dirname.Rename(
 			test.oldPath, test.newDir, test.newName,
@@ -54,10 +50,10 @@ func TestRename(t *testing.T) {
 		}
 
 		wantNewPath := filepath.Join(test.newDir, test.wantFileName)
-		if !isFileExisting(wantNewPath) {
+		if !isExistFile(wantNewPath) {
 			t.Errorf("The new file %q didn't be created.", wantNewPath)
 		}
-		if isFileExisting(test.oldPath) {
+		if isExistFile(test.oldPath) {
 			t.Errorf("The old file %q didn't be removed.", test.oldPath)
 		}
 		if filePath != wantNewPath {
@@ -69,8 +65,6 @@ func TestRename(t *testing.T) {
 }
 
 func TestRenameAll(t *testing.T) {
-	testDataDir := getTestDataDir()
-
 	for _, test := range []struct {
 		root, newDir, newFileName string
 		files                     []string
@@ -80,10 +74,7 @@ func TestRenameAll(t *testing.T) {
 			[]string{"dir4-1/text.txt", "dir4-2/text.txt", "dir4-2/画像.jpg"},
 			[]string{"new4.txt", "new4-1.txt", "new4.jpg"}},
 	} {
-		test.root = filepath.Join(testDataDir, test.root)
 		createAlls(test.root, test.files)
-
-		test.newDir = filepath.Join(testDataDir, test.newDir)
 
 		err := dirname.RenameAll(test.root, test.newDir, test.newFileName)
 
@@ -93,7 +84,7 @@ func TestRenameAll(t *testing.T) {
 
 		for _, wantFileName := range test.wantFileNames {
 			wantNewPath := filepath.Join(test.newDir, wantFileName)
-			if !isFileExisting(wantNewPath) {
+			if !isExistFile(wantNewPath) {
 				t.Errorf("The new path %q didn't be created.\n", wantNewPath)
 			}
 		}
@@ -101,9 +92,8 @@ func TestRenameAll(t *testing.T) {
 		clearTestDir()
 	}
 }
-func TestRenamePattern(t *testing.T) {
-	testDataDir := getTestDataDir()
 
+func TestRenamePattern(t *testing.T) {
 	for _, test := range []struct {
 		root, newDir, newFileName, pattern string
 		files                              []string
@@ -115,10 +105,7 @@ func TestRenamePattern(t *testing.T) {
 			[]string{"new4.txt", "new4-1.txt"},
 			[]string{"new4.jpg"}},
 	} {
-		test.root = filepath.Join(testDataDir, test.root)
 		createAlls(test.root, test.files)
-
-		test.newDir = filepath.Join(testDataDir, test.newDir)
 
 		err := dirname.RenamePattern(
 			test.root, test.newDir, test.newFileName, test.pattern)
@@ -129,14 +116,14 @@ func TestRenamePattern(t *testing.T) {
 
 		for _, wantFileName := range test.wantFileNames {
 			wantNewPath := filepath.Join(test.newDir, wantFileName)
-			if !isFileExisting(wantNewPath) {
+			if !isExistFile(wantNewPath) {
 				t.Errorf("The new path %q didn't be created.\n", wantNewPath)
 			}
 		}
 
 		for _, wantRemovedFileName := range test.wantRemovedFileNames {
 			wantNewPath := filepath.Join(test.newDir, wantRemovedFileName)
-			if isFileExisting(wantNewPath) {
+			if isExistFile(wantNewPath) {
 				t.Errorf("The path not matched %q is created.\n", wantNewPath)
 			}
 		}
@@ -147,13 +134,8 @@ func TestRenamePattern(t *testing.T) {
 
 func createAll(path string) {
 	dir, _ := filepath.Split(path)
-
-	if err := os.MkdirAll(dir, 0777); err != nil {
-		fmt.Printf("clearTestDir() error: %s\n", err)
-	}
-	if _, err := os.Create(path); err != nil {
-		fmt.Printf("clearTestDir() error: %s\n", err)
-	}
+	os.MkdirAll(dir, fileMode)
+	os.Create(path)
 }
 
 func createAlls(root string, path []string) {
@@ -163,31 +145,23 @@ func createAlls(root string, path []string) {
 }
 
 func createTestDir() {
-	dir, _ := os.Getwd()
-	os.Mkdir(filepath.Join(dir, getTestDataDir()), 0777)
+	os.Mkdir(tmpTestData, fileMode)
+	os.Chdir(tmpTestData)
 }
 
 func removeTestDir() {
-	dir := getTestDataDir()
-	os.RemoveAll(dir)
+	os.Chdir("..")
+	os.RemoveAll(tmpTestData)
 }
 
 func clearTestDir() {
-	dir := getTestDataDir()
-	if err := os.RemoveAll(dir); err != nil {
-		fmt.Printf("clearTestDir() error: %s\n", err)
-	}
-	if err := os.Mkdir(dir, 0777); err != nil {
-		fmt.Printf("clearTestDir() error: %s\n", err)
-	}
+	os.Chdir("..")
+	os.RemoveAll(tmpTestData)
+	os.Mkdir(tmpTestData, fileMode)
+	os.Chdir(tmpTestData)
 }
 
-func getTestDataDir() string {
-	dir, _ := os.Getwd()
-	return filepath.Join(dir, tmpTestData)
-}
-
-func isFileExisting(dir string) bool {
+func isExistFile(dir string) bool {
 	_, err := os.Stat(dir)
 	return err == nil
 }
