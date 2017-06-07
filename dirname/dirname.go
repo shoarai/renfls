@@ -14,27 +14,16 @@ const fileSuffix = "-%d"
 
 // Rename renames a file or a directory and moves it to a directory.
 func Rename(oldPath, newDir, newName string) (string, error) {
-	if !isFileExisting(oldPath) {
+	if !isExist(oldPath) {
 		return "", fmt.Errorf("Rename %s: no such file or directory", oldPath)
 	}
-	if !isFileExisting(newDir) {
+	if !isExist(newDir) {
 		return "", fmt.Errorf("Rename %s: no such file or directory", newDir)
 	}
 
-	_, oldName := filepath.Split(oldPath)
-	ext := filepath.Ext(oldName)
-
-	var newPath string
-	for i := 0; i < math.MaxInt16; i++ {
-		var suff string
-		if i != 0 {
-			suff = fmt.Sprintf(fileSuffix, i)
-		}
-		newPath = filepath.Join(newDir, newName+suff+ext)
-		if !isFileExisting(newPath) {
-			break
-		}
-	}
+	_, oldFile := filepath.Split(oldPath)
+	ext := filepath.Ext(oldFile)
+	newPath := addSuffixIfSamePath(newDir, newName, ext)
 
 	if err := os.Rename(oldPath, newPath); err != nil {
 		return "", err
@@ -42,9 +31,24 @@ func Rename(oldPath, newDir, newName string) (string, error) {
 	return newPath, nil
 }
 
+func addSuffixIfSamePath(dir, file, ext string) string {
+	path := filepath.Join(dir, file)
+	if p := path + ext; !isExist(p) {
+		return p
+	}
+
+	for i := 2; i < math.MaxInt16; i++ {
+		suff := fmt.Sprintf(fileSuffix, i)
+		if p := path + suff + ext; !isExist(p) {
+			return p
+		}
+	}
+	return ""
+}
+
 // RenameAll renames all files in root and moves these to a directory.
 func RenameAll(root, newDir, newFileName string) error {
-	if !isFileExisting(newDir) {
+	if !isExist(newDir) {
 		return fmt.Errorf("RenameAll %s: no such file or directory", newDir)
 	}
 
@@ -63,7 +67,7 @@ func RenameAll(root, newDir, newFileName string) error {
 // RenamePattern renames all files matching pattern in root
 // and moves these to a directory.
 func RenamePattern(root, newDir, newFileName string, pattern string) error {
-	if !isFileExisting(newDir) {
+	if !isExist(newDir) {
 		return fmt.Errorf("RenamePattern %s: no such file or directory", newDir)
 	}
 
@@ -84,7 +88,7 @@ func RenamePattern(root, newDir, newFileName string, pattern string) error {
 	})
 }
 
-func isFileExisting(dir string) bool {
-	_, err := os.Stat(dir)
+func isExist(path string) bool {
+	_, err := os.Stat(path)
 	return err == nil
 }
