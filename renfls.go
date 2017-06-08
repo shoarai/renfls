@@ -1,6 +1,6 @@
 // Copyright © 2017 shoarai
 
-package dirname
+package renfls
 
 import (
 	"fmt"
@@ -13,7 +13,6 @@ import (
 
 const (
 	fileSuffix = "-%d"
-	fileMode   = 0777
 	tempDir    = "fails"
 )
 
@@ -130,7 +129,7 @@ func ToDirNames(root string) error {
 	}
 
 	tempDirInRoot := filepath.Join(root, tempDir)
-	if err := os.Mkdir(tempDirInRoot, fileMode); err != nil {
+	if err := os.Mkdir(tempDirInRoot, os.ModePerm); err != nil {
 		return fmt.Errorf("ToDirNames: Temporary directory can't create. %s", err)
 	}
 

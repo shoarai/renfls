@@ -1,18 +1,17 @@
 // Copyright © 2017 shoarai
 
-package dirname_test
+package renfls_test
 
 import (
 	"os"
 	"path/filepath"
 	"testing"
 
-	"github.com/shoarai/toDirName/dirname"
+	"github.com/shoarai/renfls"
 )
 
 const (
 	tmpTestData = ".testdata"
-	fileMode    = 0777
 )
 
 func TestMain(m *testing.M) {
@@ -41,7 +40,7 @@ func TestRename(t *testing.T) {
 	} {
 		createAll(test.oldPath)
 
-		filePath, err := dirname.Rename(
+		filePath, err := renfls.Rename(
 			test.oldPath, test.newDir, test.newName,
 		)
 
@@ -76,7 +75,7 @@ func TestRenameAll(t *testing.T) {
 	} {
 		createAlls(test.root, test.files)
 
-		err := dirname.RenameAll(test.root, test.newDir, test.newFileName)
+		err := renfls.RenameAll(test.root, test.newDir, test.newFileName)
 
 		if err != nil {
 			t.Errorf("RenameAll(%v) error: %s\n", test, err)
@@ -107,7 +106,7 @@ func TestRenamePattern(t *testing.T) {
 	} {
 		createAlls(test.root, test.files)
 
-		err := dirname.RenamePattern(
+		err := renfls.RenamePattern(
 			test.root, test.newDir, test.newFileName, test.pattern)
 
 		if err != nil {
@@ -134,7 +133,7 @@ func TestRenamePattern(t *testing.T) {
 
 func createAll(path string) {
 	dir, _ := filepath.Split(path)
-	os.MkdirAll(dir, fileMode)
+	os.MkdirAll(dir, os.ModePerm)
 	os.Create(path)
 }
 
@@ -145,7 +144,7 @@ func createAlls(root string, path []string) {
 }
 
 func createTestDir() {
-	os.Mkdir(tmpTestData, fileMode)
+	os.Mkdir(tmpTestData, os.ModePerm)
 	os.Chdir(tmpTestData)
 }
 

@@ -8,14 +8,14 @@ import (
 	"os"
 	"os/exec"
 
-	"github.com/shoarai/toDirName/dirname"
+	"github.com/shoarai/renfls"
 )
 
 const toDir = "toDirNameDirectories"
 
 func main() {
 	createTestDir()
-	if err := dirname.ToDirNames(toDir); err != nil {
+	if err := renfls.ToDirNames(toDir); err != nil {
 		fmt.Println(err)
 	}
 }
