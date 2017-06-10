@@ -3,6 +3,7 @@
 package renfls_test
 
 import (
+	"io/ioutil"
 	"os"
 	"path/filepath"
 	"testing"
@@ -17,7 +18,7 @@ const (
 func TestMain(m *testing.M) {
 	createTestDir()
 	code := m.Run()
-	removeTestDir()
+	// removeTestDir()
 	os.Exit(code)
 }
 
@@ -100,7 +101,7 @@ func TestRenamePattern(t *testing.T) {
 		wantRemovedFileNames               []string
 	}{
 		{"dir4", ".", "new4", `text*`,
-			[]string{"dir4-1/text.txt", "dir4-2/text.txt", "dir4-2/画像.jpg"},
+			[]string{"dir4-1/text.txt", "dir4-2/text.txt", "dir4-2/image.jpg"},
 			[]string{"new4.txt", "new4-2.txt"},
 			[]string{"new4.jpg"}},
 	} {
@@ -132,14 +133,14 @@ func TestRenamePattern(t *testing.T) {
 }
 
 func TestToDirNames(t *testing.T) {
-	for _, data := range createTestData() {
-		e := renfls.ToDirNames(data.dir)
-		if e != nil {
-			t.Errorf("TestToDirNames(%v) error: %s\n", data.dir, e)
-		}
+	createTestData()
 
-		wantFiles := []string{
-			"file.txt",
+	for _, test := range []struct {
+		root      string
+		wantFiles []string
+	}{
+		{"root", []string{
+			"image.jpg",
 			"dir1.txt",
 			"dir1.jpg",
 			"dir2.txt",
@@ -147,10 +148,15 @@ func TestToDirNames(t *testing.T) {
 			"ディレクトリ3.txt",
 			"ディレクトリ3-2.txt",
 			"ディレクトリ3-3.txt",
+		}},
+	} {
+		e := renfls.ToDirNames(test.root)
+		if e != nil {
+			t.Errorf("ToDirNames(%v) error: %s\n", test.root, e)
 		}
 
-		for _, want := range wantFiles {
-			wantPath := filepath.Join(data.dir, want)
+		for _, want := range test.wantFiles {
+			wantPath := filepath.Join(test.root, want)
 			if isNotFileExist(wantPath) {
 				t.Errorf("The path %q didn't be created.\n", wantPath)
 			}
@@ -158,6 +164,86 @@ func TestToDirNames(t *testing.T) {
 
 		clearTestDir()
 	}
+}
+
+func TestToDirNamesPattern(t *testing.T) {
+	createTestData()
+
+	for _, test := range []struct {
+		root, pattern string
+		wantFiles     []string
+		wantNotExists []string
+	}{
+		{"root", `.txt$`, []string{
+			"dir1.txt",
+			"dir2.txt",
+			"dir2-2.txt",
+			"ディレクトリ3.txt",
+			"ディレクトリ3-2.txt",
+			"ディレクトリ3-3.txt",
+		}, []string{
+			"image.jpg",
+			"dir1.jpg",
+		}},
+	} {
+		e := renfls.ToDirNamesPattern(test.root, test.pattern)
+		if e != nil {
+			t.Errorf("ToDirNamesPattern(%v) error: %s\n", test.root, e)
+		}
+
+		for _, want := range test.wantFiles {
+			wantPath := filepath.Join(test.root, want)
+			if isNotFileExist(wantPath) {
+				t.Errorf("The path %q didn't be created.\n", want)
+			}
+		}
+		for _, want := range test.wantNotExists {
+			wantPath := filepath.Join(test.root, want)
+			if !isNotFileExist(wantPath) {
+				t.Errorf("The path %q is created.\n", want)
+			}
+		}
+
+		clearTestDir()
+	}
+}
+
+func getFiles(dir string) []string {
+	dirs, e := ioutil.ReadDir(dir)
+	if e != nil {
+		return nil
+	}
+	var strs []string
+	for _, dir := range dirs {
+		strs = append(strs, dir.Name())
+	}
+	return strs
+}
+
+func equalNoOrder(strs1, strs2 []string) (string, bool) {
+	if len(strs1) != len(strs2) {
+		return "", false
+	}
+	for _, s1 := range strs1 {
+		if !contains(strs2, s1) {
+			return s1, false
+		}
+	}
+	for _, s2 := range strs2 {
+		if !contains(strs1, s2) {
+			return s2, false
+		}
+	}
+	return "", true
+}
+
+func contains(strs []string, s string) bool {
+	for _, str := range strs {
+		if str == s {
+			return true
+		}
+	}
+	return false
 }
 
 type DirTree struct {
@@ -169,7 +255,7 @@ type DirTree struct {
 func createTestData() []*DirTree {
 	data := []*DirTree{
 		{"root", []string{
-			"file.txt"}, []*DirTree{
+			"image.jpg"}, []*DirTree{
 			{"dir1", []string{
 				"text.txt",
 				"image.jpg",

@@ -13,8 +13,8 @@ import (
 )
 
 const (
-	fileSuffix = "-%d"
-	tempDir    = "fails"
+	fileSuffix  = "-%d"
+	tempDirName = "fails"
 )
 
 // Rename renames a file or a directory and moves it to a directory.
@@ -30,8 +30,8 @@ func Rename(oldPath, newDir, newName string) (string, error) {
 	ext := filepath.Ext(oldFile)
 	newPath := addSuffixIfSamePath(newDir, newName, ext)
 
-	if err := os.Rename(oldPath, newPath); err != nil {
-		return "", err
+	if e := os.Rename(oldPath, newPath); e != nil {
+		return "", e
 	}
 	return newPath, nil
 }
@@ -60,18 +60,10 @@ func RenameAll(root, newDir, newFileName string) error {
 		return fmt.Errorf("RenameAll %s: no such file or directory", newDir)
 	}
 
-	return filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
-		if err != nil {
-			return err
-		}
-		if info.IsDir() {
-			return nil
-		}
-		if _, err := Rename(path, newDir, newFileName); err != nil {
-			return err
-		}
-		return nil
-	})
+	return filepath.Walk(root, walkRenameFunc(newDir, newFileName,
+		func(info os.FileInfo) bool {
+			return !info.IsDir()
+		}))
 }
 
 // RenamePattern renames all files matching pattern in root
@@ -84,23 +76,31 @@ func RenamePattern(root, newDir, newFileName, pattern string) error {
 		return fmt.Errorf("RenamePattern %s: no such file or directory", newDir)
 	}
 
-	reg, err := regexp.Compile(pattern)
-	if err != nil {
-		return err
+	reg, e := regexp.Compile(pattern)
+	if e != nil {
+		return e
 	}
 
-	return filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
+	return filepath.Walk(root, walkRenameFunc(newDir, newFileName,
+		func(info os.FileInfo) bool {
+			return !info.IsDir() && reg.MatchString(info.Name())
+		}))
+}
+
+func walkRenameFunc(newDir, newFileName string,
+	condition func(info os.FileInfo) bool) filepath.WalkFunc {
+	return func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
-		if info.IsDir() || !reg.MatchString(info.Name()) {
+		if !condition(info) {
 			return nil
 		}
 		if _, err := Rename(path, newDir, newFileName); err != nil {
 			return err
 		}
 		return nil
-	})
+	}
 }
 
 // ToRootDirName renames all files in root
@@ -120,50 +120,95 @@ func ToRootDirNamePattern(root, newDir, pattern string) error {
 // ToDirNames renames all files in root
 // by the directories name in root and moves these to a directory.
 func ToDirNames(root string) error {
-	if isNotExist(root) {
-		return fmt.Errorf("ToDirNames %s: no such file or directory", root)
+	tempDir, e := moveDirs(root, tempDirName)
+	if e != nil {
+		return e
 	}
-
-	dirs, err := ioutil.ReadDir(root)
-	if err != nil {
-		return err
+	if e := renameToDirName(tempDir, root); e != nil {
+		return e
 	}
-
-	tempDirInRoot := filepath.Join(root, tempDir)
-	if err := os.Mkdir(tempDirInRoot, os.ModePerm); err != nil {
-		return fmt.Errorf("ToDirNames: Temporary directory can't create. %s", err)
-	}
-
-	for _, dir := range dirs {
-		if !dir.IsDir() {
-			continue
-		}
-		path := filepath.Join(root, dir.Name())
-		dirInTempDIr := filepath.Join(tempDirInRoot + "/" + dir.Name())
-		if err := os.Rename(path, dirInTempDIr); err != nil {
-			continue
-		}
-	}
-
-	dirs, err = ioutil.ReadDir(tempDirInRoot)
-	if err != nil {
-		return err
-	}
-
-	for _, dir := range dirs {
-		path := filepath.Join(tempDirInRoot, dir.Name())
-		if err := ToRootDirName(path, root); err != nil {
-			return err
-		}
-	}
-
-	if err := os.RemoveAll(tempDirInRoot); err != nil {
-		return err
+	if e := os.RemoveAll(tempDir); e != nil {
+		return e
 	}
 	return nil
 }
 
+// ToDirNamesPattern renames all files matching pattern in root
+// by the directories name in root and moves these to a directory.
+func ToDirNamesPattern(root, pattern string) error {
+	tempDir, e := moveDirs(root, tempDirName)
+	if e != nil {
+		return e
+	}
+	if e := renameToDirNamePattern(tempDir, root, pattern); e != nil {
+		return e
+	}
+	if e := os.RemoveAll(tempDir); e != nil {
+		return e
+	}
+	return nil
+}
+
+func renameToDirName(root, newDir string) error {
+	dirs, e := ioutil.ReadDir(root)
+	if e != nil {
+		return e
+	}
+
+	for _, dir := range dirs {
+		path := filepath.Join(root, dir.Name())
+		if e := ToRootDirName(path, newDir); e != nil {
+			return e
+		}
+	}
+	return nil
+}
+
+func renameToDirNamePattern(root, newDir, pattern string) error {
+	dirs, e := ioutil.ReadDir(root)
+	if e != nil {
+		return e
+	}
+
+	for _, dir := range dirs {
+		path := filepath.Join(root, dir.Name())
+		if e := ToRootDirNamePattern(path, newDir, pattern); e != nil {
+			return e
+		}
+	}
+	return nil
+}
+
+func moveDirs(root, newDir string) (string, error) {
+	if isNotExist(root) {
+		return "", fmt.Errorf("ToDirNames %s: no such file or directory", root)
+	}
+
+	dirs, e := ioutil.ReadDir(root)
+	if e != nil {
+		return "", e
+	}
+
+	tempDir := filepath.Join(root, newDir)
+	if e := os.Mkdir(tempDir, os.ModePerm); e != nil {
+		return "", fmt.Errorf("ToDirNames: Temporary directory can't be created. %s", e)
+	}
+
+	for _, dir := range dirs {
+		// if !dir.IsDir() {
+		// 	continue
+		// }
+		path := filepath.Join(root, dir.Name())
+		dirInTempDir := filepath.Join(tempDir + "/" + dir.Name())
+		if e := os.Rename(path, dirInTempDir); e != nil {
+			continue
+		}
+	}
+
+	return tempDir, nil
+}
+
 func isNotExist(path string) bool {
-	_, err := os.Stat(path)
-	return err != nil
+	_, e := os.Stat(path)
+	return e != nil
 }
