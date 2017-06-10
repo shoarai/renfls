@@ -1,5 +1,6 @@
 // Copyright © 2017 shoarai
 
+// Package renfls provides interfaces to rename files in directory.
 package renfls
 
 import (

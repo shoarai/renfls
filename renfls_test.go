@@ -131,6 +131,90 @@ func TestRenamePattern(t *testing.T) {
 	}
 }
 
+func TestToDirNames(t *testing.T) {
+	for _, data := range createTestData() {
+		e := renfls.ToDirNames(data.dir)
+		if e != nil {
+			t.Errorf("TestToDirNames(%v) error: %s\n", data.dir, e)
+		}
+
+		wantFiles := []string{
+			"file.txt",
+			"dir1.txt",
+			"dir1.jpg",
+			"dir2.txt",
+			"dir2-2.txt",
+			"ディレクトリ3.txt",
+			"ディレクトリ3-2.txt",
+			"ディレクトリ3-3.txt",
+		}
+
+		for _, want := range wantFiles {
+			wantPath := filepath.Join(data.dir, want)
+			if isNotFileExist(wantPath) {
+				t.Errorf("The path %q didn't be created.\n", wantPath)
+			}
+		}
+
+		clearTestDir()
+	}
+}
+
+type DirTree struct {
+	dir    string
+	files  []string
+	subDir []*DirTree
+}
+
+func createTestData() []*DirTree {
+	data := []*DirTree{
+		{"root", []string{
+			"file.txt"}, []*DirTree{
+			{"dir1", []string{
+				"text.txt",
+				"image.jpg",
+			}, nil},
+			{"dir2", []string{
+				"text2.txt",
+				"text2-1.txt",
+			}, nil},
+			{"ディレクトリ3", []string{
+				"テキスト.txt",
+			}, []*DirTree{
+				{"dir3-1", []string{
+					"text3-1.txt",
+					"あいうえお　.txt",
+				}, nil}},
+			},
+			{"dir4", nil, nil},
+		}},
+	}
+	createDirTrees(data)
+	return data
+}
+
+func createDirTrees(trees []*DirTree) {
+	createDirTree("", trees)
+}
+
+func createDirTree(root string, trees []*DirTree) {
+	if trees == nil {
+		return
+	}
+	for _, tree := range trees {
+		dir := filepath.Join(root, tree.dir)
+		create(dir, tree.files)
+		createDirTree(dir, tree.subDir)
+	}
+}
+
+func create(dir string, files []string) {
+	os.Mkdir(dir, os.ModePerm)
+	for _, f := range files {
+		os.Create(filepath.Join(dir, f))
+	}
+}
+
 func createAll(path string) {
 	dir, _ := filepath.Split(path)
 	os.MkdirAll(dir, os.ModePerm)
@@ -158,7 +242,23 @@ func clearTestDir() {
 	createTestDir()
 }
 
-func isExist(dir string) bool {
-	_, err := os.Stat(dir)
+func isFileExist(path string) bool {
+	f, e := os.Stat(path)
+	if e != nil {
+		return false
+	}
+	return !f.IsDir()
+}
+
+func isNotFileExist(path string) bool {
+	return !isFileExist(path)
+}
+
+func isExist(path string) bool {
+	_, err := os.Stat(path)
 	return err == nil
+}
+
+func isNotExist(path string) bool {
+	return !isExist(path)
 }
