@@ -24,7 +24,7 @@ func main() {
 	// createTestDir()
 
 	flag.BoolVar(&ignore, "ignore", false, "bool flag")
-	flag.StringVar(&ext, "ext", "", "extensions splited by \".\"")
+	flag.StringVar(&ext, "ext", "", "extensions splited by \",\"")
 	flag.Parse()
 
 	exts := strings.Split(ext, ",")
