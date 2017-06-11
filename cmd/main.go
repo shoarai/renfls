@@ -1,21 +1,40 @@
 // Copyright © 2017 shoarai
 
-// The ToDirName re-name the files in a directory to the directory.
+// The renfls renames files in a directory.
 package main
 
 import (
+	"flag"
 	"fmt"
 	"os"
 	"os/exec"
+	"strings"
 
 	"github.com/shoarai/renfls"
 )
 
-const toDir = "toDirNameDirectories"
+const toDir = "toSubDirsName"
+
+// Flag
+var ext string
+var ignore bool
 
 func main() {
 	createTestDir()
-	if err := renfls.ToDirNames(toDir); err != nil {
+
+	flag.BoolVar(&ignore, "ignore", false, "bool flag")
+	flag.StringVar(&ext, "ext", "", "extensions splited by \".\"")
+	flag.Parse()
+
+	exts := strings.Split(ext, ",")
+	var err error
+	if !ignore {
+		// err = renfls.ToSubDirsNameExt(toDir, exts)
+	} else {
+		err = renfls.ToSubDirsNameIgnoreExt(toDir, exts)
+	}
+
+	if err != nil {
 		fmt.Println(err)
 	}
 }
