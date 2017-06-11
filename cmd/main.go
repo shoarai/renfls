@@ -13,10 +13,7 @@ import (
 	"github.com/shoarai/renfls"
 )
 
-const (
-	separator = ","
-	toDir     = "toSubDirsName"
-)
+const separator = ","
 
 // Flag parameter
 var ext string
@@ -24,8 +21,8 @@ var ignore bool
 
 func main() {
 	flag.StringVar(&ext, "ext", "",
-		fmt.Sprintf("extensions splited by %q", separator))
-	flag.BoolVar(&ignore, "ignore", false, "bool flag")
+		fmt.Sprintf("Rename files only matching extension list separated by %q", separator))
+	flag.BoolVar(&ignore, "ignore", false, "Exclude files matching patterns")
 	flag.Parse()
 
 	root := flag.Arg(0)
@@ -47,8 +44,9 @@ func main() {
 }
 
 func createTestDir() {
-	os.RemoveAll(toDir)
-	exec.Command("cp", "-r", "testdata", toDir).Run()
+	dir := "toSubDirsName"
+	os.RemoveAll(dir)
+	exec.Command("cp", "-r", "testdata", dir).Run()
 }
 
 func toSubDirsName(root string, exts []string, ignore bool) error {

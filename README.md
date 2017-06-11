@@ -30,3 +30,19 @@ root/
 ```sh
 $ go get github.com/shoarai/renfls
 ```
+
+## Usage
+```sh
+$ renfls root 
+```
+### Option
+|Option   |Description                      |
+|---------|---------------------------------|
+|-ext     |Rename files only matching extension list separated by ","|
+|-ignore  |Exclude files matching patterns|
+
+For example, the following command renames files not matching extension of "jpg" and "mp4" in "root" directory.
+
+```sh
+$ renfls -ext=jpg,mp4 -ignore root
+```
