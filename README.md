@@ -1,5 +1,5 @@
 # renfls
-renfls renames files in a directory.
+renfls renames all files or files matching patterns in directories.
 #### Before
 <pre>
 root/

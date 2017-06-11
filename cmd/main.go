@@ -1,6 +1,6 @@
 // Copyright © 2017 shoarai
 
-// The renfls renames files in a directory.
+// renfls renames all files or files matching patterns in directories.
 package main
 
 import (
