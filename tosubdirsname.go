@@ -49,14 +49,11 @@ func renameToDirName(root, newDir string) error {
 // ToSubDirsNamePattern renames all files matching pattern in root
 // by the directories name in root and moves these to a directory.
 func ToSubDirsNamePattern(root, pattern string) error {
-	tempDir, e := moveDirs(root, tempDirName)
+	tempDir, e := moveDirs(root, ignoreDirName)
 	if e != nil {
 		return e
 	}
 	if e := renameToDirNamePattern(tempDir, root, pattern); e != nil {
-		return e
-	}
-	if e := os.RemoveAll(tempDir); e != nil {
 		return e
 	}
 	return nil
@@ -80,14 +77,11 @@ func renameToDirNamePattern(root, newDir, pattern string) error {
 // ToSubDirsNameIgnoreExt renames all files not matching extensions in root
 // by the directories name in root and moves these to a directory.
 func ToSubDirsNameIgnoreExt(root string, exts []string) error {
-	tempDir, e := moveDirs(root, tempDirName)
+	tempDir, e := moveDirs(root, ignoreDirName)
 	if e != nil {
 		return e
 	}
 	if e := renameToDirNameIgnoreExt(tempDir, root, exts); e != nil {
-		return e
-	}
-	if e := os.RemoveAll(tempDir); e != nil {
 		return e
 	}
 	return nil
@@ -119,8 +113,10 @@ func moveDirs(root, newDir string) (string, error) {
 	}
 
 	tempDir := filepath.Join(root, newDir)
-	if e := os.Mkdir(tempDir, os.ModePerm); e != nil {
-		return "", fmt.Errorf("ToDirNames: Temporary directory can't be created. %s", e)
+	if isNotExist(tempDir) {
+		if e := os.Mkdir(tempDir, os.ModePerm); e != nil {
+			return "", fmt.Errorf("ToDirNames: Temporary directory can't be created. %s", e)
+		}
 	}
 
 	for _, dir := range dirs {

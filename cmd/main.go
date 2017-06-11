@@ -20,7 +20,8 @@ var ext string
 var ignore bool
 
 func main() {
-	createTestDir()
+	// DEBUG:
+	// createTestDir()
 
 	flag.BoolVar(&ignore, "ignore", false, "bool flag")
 	flag.StringVar(&ext, "ext", "", "extensions splited by \".\"")
