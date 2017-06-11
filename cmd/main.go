@@ -13,34 +13,50 @@ import (
 	"github.com/shoarai/renfls"
 )
 
-const toDir = "toSubDirsName"
+const (
+	separator = ","
+	toDir     = "toSubDirsName"
+)
 
-// Flag
+// Flag parameter
 var ext string
 var ignore bool
 
 func main() {
+	flag.StringVar(&ext, "ext", "",
+		fmt.Sprintf("extensions splited by %q", separator))
+	flag.BoolVar(&ignore, "ignore", false, "bool flag")
+	flag.Parse()
+
+	root := flag.Arg(0)
+	if root == "" {
+		fmt.Println("Input root directory name as command argument")
+		return
+	}
+	var exts []string
+	if ext != "" {
+		exts = strings.Split(ext, separator)
+	}
+
 	// DEBUG:
 	// createTestDir()
 
-	flag.BoolVar(&ignore, "ignore", false, "bool flag")
-	flag.StringVar(&ext, "ext", "", "extensions splited by \",\"")
-	flag.Parse()
-
-	exts := strings.Split(ext, ",")
-	var err error
-	if !ignore {
-		// err = renfls.ToSubDirsNameExt(toDir, exts)
-	} else {
-		err = renfls.ToSubDirsNameIgnoreExt(toDir, exts)
-	}
-
-	if err != nil {
-		fmt.Println(err)
+	if e := toSubDirsName(root, exts, ignore); e != nil {
+		fmt.Println(e)
 	}
 }
 
 func createTestDir() {
 	os.RemoveAll(toDir)
 	exec.Command("cp", "-r", "testdata", toDir).Run()
+}
+
+func toSubDirsName(root string, exts []string, ignore bool) error {
+	if len(ext) == 0 {
+		return renfls.ToSubDirsName(root)
+	}
+	if ignore {
+		return renfls.ToSubDirsNameIgnoreExt(root, exts)
+	}
+	return renfls.ToSubDirsNameExt(root, exts)
 }

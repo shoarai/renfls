@@ -74,6 +74,34 @@ func renameToDirNamePattern(root, newDir, pattern string) error {
 	return nil
 }
 
+// ToSubDirsNameExt renames all files matching extensions in root
+// by the directories name in root and moves these to a directory.
+func ToSubDirsNameExt(root string, exts []string) error {
+	tempDir, e := moveDirs(root, ignoreDirName)
+	if e != nil {
+		return e
+	}
+	if e := renameToDirNameExt(tempDir, root, exts); e != nil {
+		return e
+	}
+	return nil
+}
+
+func renameToDirNameExt(root, newDir string, exts []string) error {
+	dirs, e := ioutil.ReadDir(root)
+	if e != nil {
+		return e
+	}
+
+	for _, dir := range dirs {
+		path := filepath.Join(root, dir.Name())
+		if e := ToDirNameExt(path, newDir, exts); e != nil {
+			return e
+		}
+	}
+	return nil
+}
+
 // ToSubDirsNameIgnoreExt renames all files not matching extensions in root
 // by the directories name in root and moves these to a directory.
 func ToSubDirsNameIgnoreExt(root string, exts []string) error {
