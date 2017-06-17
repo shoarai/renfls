@@ -1,5 +1,8 @@
 # renfls
 renfls renames all files or files matching patterns in directories.
+
+![](https://travis-ci.org/shoarai/renfls.svg?branch=master)
+
 #### Before
 <pre>
 root/
