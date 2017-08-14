@@ -3,6 +3,8 @@
 package renfls_test
 
 import (
+	"fmt"
+	"io/ioutil"
 	"os"
 	"path/filepath"
 	"testing"
@@ -17,7 +19,7 @@ const (
 func TestMain(m *testing.M) {
 	createTestDir()
 	code := m.Run()
-	removeTestDir()
+	// removeTestDir()
 	os.Exit(code)
 }
 
@@ -39,6 +41,7 @@ func TestRename(t *testing.T) {
 		{"dir3/dir3-2", ".", "newDir 3", "newDir 3-2"},
 	} {
 		createAll(test.oldPath)
+		continue
 
 		filePath, err := renfls.Rename(
 			test.oldPath, test.newDir, test.newName,
@@ -63,7 +66,7 @@ func TestRename(t *testing.T) {
 	}
 }
 
-func TestRenameAll(t *testing.T) {
+func TestWalkRenameAll(t *testing.T) {
 	for _, test := range []struct {
 		root, newDir, newFileName string
 		files                     []string
@@ -75,10 +78,10 @@ func TestRenameAll(t *testing.T) {
 	} {
 		createAlls(test.root, test.files)
 
-		err := renfls.RenameAll(test.root, test.newDir, test.newFileName)
+		err := renfls.WalkRenameAll(test.root, test.newDir, test.newFileName)
 
 		if err != nil {
-			t.Errorf("RenameAll(%v) error: %s\n", test, err)
+			t.Errorf("WalkRenameAll(%v) error: %s\n", test, err)
 		}
 
 		for _, wantFileName := range test.wantFileNames {
@@ -131,6 +134,94 @@ func TestRenamePattern(t *testing.T) {
 	}
 }
 
+func TestWalkRename(t *testing.T) {
+	for _, test := range []struct {
+		mockFiles               []string
+		root, dest, newFileName string
+		condition               renfls.Condition
+		wantRenamedFileNames    []string
+		wantIgnoredFileNames    []string
+	}{
+		{
+			[]string{"dir/text.txt", "dir/image.jpg"},
+			"root", ".", "newName", renfls.Condition{},
+			[]string{"newName.txt", "newName.jpg"},
+			[]string{},
+		},
+		{
+			[]string{"dir/text.txt", "dir/image.jpg"},
+			"root", ".", "newName", renfls.Condition{Reg: `text*`},
+			[]string{"newName.txt"},
+			[]string{"dir/image.jpg"},
+		},
+		{
+			[]string{"dir/text.txt", "dir/data.csv", "dir/image.jpg"},
+			"root", ".", "newName", renfls.Condition{Exts: []string{"txt", "csv"}},
+			[]string{"newName.txt"},
+			[]string{"dir/image.jpg"},
+		},
+		{
+			[]string{"dir/text.txt", "dir/data.csv", "dir/image.jpg"},
+			"root", ".", "newName", renfls.Condition{Reg: `csv*`, Exts: []string{"txt"}},
+			[]string{"newName.txt", "newName.csv"},
+			[]string{"dir/image.jpg"},
+		},
+		{
+			[]string{"dir/text.txt", "dir/image.jpg"},
+			"root", ".", "newName", renfls.Condition{Ignore: true},
+			[]string{},
+			[]string{"dir/text.txt", "dir/image.jpg"},
+		},
+		{
+			[]string{"dir/text.txt"},
+			"root", ".", "newName", renfls.Condition{Reg: `text*`, Ignore: true},
+			[]string{"newName.jpg"},
+			[]string{"dir/text.txt"},
+		},
+		{
+			[]string{"dir/text.txt", "dir/data.csv", "dir/image.jpg"},
+			"root", ".", "newName", renfls.Condition{Exts: []string{"txt", "csv"}, Ignore: true},
+			[]string{"newName.jpg"},
+			[]string{"dir/text.txt", "dir/data.csv"},
+		},
+		{
+			[]string{"dir/text.txt", "dir/data.csv", "dir/image.jpg"},
+			"root", ".", "newName", renfls.Condition{Reg: `text*`, Exts: []string{"txt"}, Ignore: true},
+			[]string{"newName.jpg"},
+			[]string{"dir/text.txt", "dir/data.csv"},
+		},
+	} {
+		createAlls(test.root, test.mockFiles)
+		defer clearTestDir()
+
+		err := renfls.WalkRename(test.root, test.dest, test.newFileName, test.condition)
+
+		if err != nil {
+			t.Errorf("WalkRename(%v) error: %s\n", test, err)
+		}
+
+		for _, wantRenamedFileNames := range test.wantRenamedFileNames {
+			wantNewPath := filepath.Join(test.dest, wantRenamedFileNames)
+			if !isExist(wantNewPath) {
+				t.Errorf("The new path %q didn't be created.\n", wantNewPath)
+			}
+		}
+
+		for _, wantIgnoredFileNames := range test.wantIgnoredFileNames {
+			wantNewPath := filepath.Join(test.dest, wantIgnoredFileNames)
+			if isExist(wantNewPath) {
+				t.Errorf("The path not matched %q is created.\n", wantNewPath)
+			}
+		}
+	}
+}
+
+func createFiles(paths []string) {
+	for _, p := range paths {
+		createAll(p)
+	}
+}
+
 func createAll(path string) {
 	dir, _ := filepath.Split(path)
 	os.MkdirAll(dir, os.ModePerm)
@@ -156,6 +247,27 @@ func removeTestDir() {
 func clearTestDir() {
 	removeTestDir()
 	createTestDir()
+}
+
+func printTestDir() error {
+	return printDir(".")
+}
+
+func printDir(dir string) error {
+	fileInfos, e := ioutil.ReadDir(dir)
+	if e != nil {
+		return e
+	}
+	for _, f := range fileInfos {
+		path := filepath.Join(dir, f.Name())
+		if !f.IsDir() {
+			fmt.Println(path)
+		} else {
+			printDir(path)
+		}
+	}
+	return nil
+
 }
 
 func isFileExist(path string) bool {

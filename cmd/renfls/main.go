@@ -16,13 +16,18 @@ import (
 const separator = ","
 
 // Flag parameter
+var dest string
 var ext string
+var reg string
 var ignore bool
 
 func main() {
+	flag.StringVar(&dest, "dest", "", "Destination to which renamed files are moved")
 	flag.StringVar(&ext, "ext", "",
-		fmt.Sprintf("Rename files only matching extension list separated by %q", separator))
-	flag.BoolVar(&ignore, "ignore", false, "Exclude files matching patterns")
+		fmt.Sprintf("Extension list separated by %q", separator))
+	flag.StringVar(&reg, "reg", "", "Regex")
+	flag.BoolVar(&ignore, "ignore", false,
+		"Flag whether files matching pattern are renamed or ignored.")
 	flag.Parse()
 
 	root := flag.Arg(0)
@@ -30,31 +35,28 @@ func main() {
 		fmt.Println("Input root directory name as command argument")
 		return
 	}
+	if dest == "" {
+		dest = root
+	}
 	var exts []string
 	if ext != "" {
 		exts = strings.Split(ext, separator)
 	}
 
-	// DEBUG:
+	// DEBUG: Copy test files
 	// createTestDir()
 
-	if e := toSubDirsName(root, exts, ignore); e != nil {
+	fmt.Println(root)
+	fmt.Println(dest)
+
+	condition := renfls.Condition{Exts: exts, Reg: reg, Ignore: ignore}
+	if e := renfls.WalkToRootSubDirName(root, dest, condition); e != nil {
 		fmt.Println(e)
 	}
 }
 
 func createTestDir() {
-	dir := "toSubDirsName"
+	dir := "rootForMain"
 	os.RemoveAll(dir)
 	exec.Command("cp", "-r", "testdata", dir).Run()
-}
-
-func toSubDirsName(root string, exts []string, ignore bool) error {
-	if len(ext) == 0 {
-		return renfls.ToSubDirsName(root)
-	}
-	if ignore {
-		return renfls.ToSubDirsNameIgnoreExt(root, exts)
-	}
-	return renfls.ToSubDirsNameExt(root, exts)
 }

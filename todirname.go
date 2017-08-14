@@ -9,7 +9,7 @@ import "path/filepath"
 // by the root directory name and moves these to a directory.
 func ToDirName(root, newDir string) error {
 	_, name := filepath.Split(root)
-	return RenameAll(root, newDir, name)
+	return WalkRenameAll(root, newDir, name)
 }
 
 // ToDirNamePattern renames all files matching pattern in root
@@ -33,9 +33,9 @@ func ToDirNameIgnoreExt(root, newDir string, exts []string) error {
 	return RenameIgnoreExt(root, newDir, name, exts)
 }
 
-// ToDirNameCondition renames all files matching condition in root
-// by the root directory name and moves these to a directory.
-func ToDirNameCondition(root, newDir string, condition Condition) error {
+// WalkToRootDirName renames files that match a condition in a root directory
+// to the root directory name and moves them to a destination directory.
+func WalkToRootDirName(root, dest string, condition Condition) error {
 	_, name := filepath.Split(root)
-	return RenameCondition(root, newDir, name, condition)
+	return WalkRename(root, dest, name, condition)
 }

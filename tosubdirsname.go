@@ -115,6 +115,35 @@ func ToSubDirsNameIgnoreExt(root string, exts []string) error {
 	return nil
 }
 
+// WalkToRootSubDirName renames files that match a condition in a root directory
+// to the sub directory name and moves them to a destination directory.
+func WalkToRootSubDirName(root, dest string, condition Condition) error {
+	tempDir, e := moveDirs(root, ignoreDirName)
+	if e != nil {
+		return e
+	}
+
+	if e := walkToRootDirName(tempDir, dest, condition); e != nil {
+		return e
+	}
+	return nil
+}
+
+func walkToRootDirName(root, dest string, condition Condition) error {
+	dirs, e := ioutil.ReadDir(root)
+	if e != nil {
+		return e
+	}
+
+	for _, dir := range dirs {
+		path := filepath.Join(root, dir.Name())
+		if e := WalkToRootDirName(path, dest, condition); e != nil {
+			return e
+		}
+	}
+	return nil
+}
+
 func renameToDirNameIgnoreExt(root, newDir string, exts []string) error {
 	dirs, e := ioutil.ReadDir(root)
 	if e != nil {
