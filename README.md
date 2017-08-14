@@ -47,11 +47,12 @@ $ renfls "root directory"
 ### Option
 |Option   |Description                      |
 |---------|---------------------------------|
+|-dest    |Destination to which renamed files are moved|
 |-ext     |Rename files only matching extension list separated by ","|
 |-ignore  |Exclude files matching patterns|
 
-For example, the following command renames files whose extension is not "jpg" or "mp4" in "root" directory.
+For example, the following command renames files whose extension is not "jpg" or "mp4" in the "root" directory and moves them to the "dest" directory.
 
 ```sh
-$ renfls -ext=jpg,mp4 -ignore root
+$ renfls -dest=dest -ext=jpg,mp4 -ignore root
 ```
