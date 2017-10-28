@@ -41,8 +41,24 @@ $ go get github.com/shoarai/renfls
 ```
 
 ## Usage
+#### CLI
 ```sh
-$ renfls "root directory"
+$ renfls -dest=dest root
+```
+
+#### go
+```go
+package main
+
+import "github.com/shoarai/renfls"
+
+func main() {
+    // Move files that match the condition in the "root" directory to the "dest" directory.
+    condition := renfls.Condition{Exts: "jpg", Reg: "image*", Ignore: false}
+    if e := renfls.WalkToRootSubDirName("root", "dest", condition); e != nil {
+        // fmt.Println(e)
+    }
+}
 ```
 ### Option
 |Option   |Description                      |
