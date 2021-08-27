@@ -85,7 +85,7 @@ func WalkRename(root, dest, newFileName string, condition Condition) error {
 		if condition.Reg != "" && !reg.MatchString(info.Name()) {
 			return false
 		}
-		if condition.Exts != nil && len(condition.Exts) == 0 && !hasExt(info.Name(), condition.Exts) {
+		if condition.Exts != nil && len(condition.Exts) > 0 && !hasExt(info.Name(), condition.Exts) {
 			return false
 		}
 		return true
