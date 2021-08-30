@@ -19,7 +19,7 @@ const (
 func TestMain(m *testing.M) {
 	createTestDir()
 	code := m.Run()
-	// removeTestDir()
+	removeTestDir()
 	os.Exit(code)
 }
 
@@ -162,9 +162,9 @@ func TestWalkRename(t *testing.T) {
 		},
 		{
 			[]string{"dir/text.txt", "dir/data.csv", "dir/image.jpg"},
-			"root", ".", "newName", renfls.Condition{Reg: `csv*`, Exts: []string{"txt"}},
-			[]string{"newName.txt", "newName.csv"},
-			[]string{"dir/image.jpg"},
+			"root", ".", "newName", renfls.Condition{Reg: `text*`, Exts: []string{"txt"}},
+			[]string{"newName.txt"},
+			[]string{"dir/data.csv", "dir/image.jpg"},
 		},
 		{
 			[]string{"dir/text.txt", "dir/image.jpg"},
@@ -173,7 +173,7 @@ func TestWalkRename(t *testing.T) {
 			[]string{"dir/text.txt", "dir/image.jpg"},
 		},
 		{
-			[]string{"dir/text.txt"},
+			[]string{"dir/text.txt", "dir/image.jpg"},
 			"root", ".", "newName", renfls.Condition{Reg: `text*`, Ignore: true},
 			[]string{"newName.jpg"},
 			[]string{"dir/text.txt"},
@@ -186,13 +186,12 @@ func TestWalkRename(t *testing.T) {
 		},
 		{
 			[]string{"dir/text.txt", "dir/data.csv", "dir/image.jpg"},
-			"root", ".", "newName", renfls.Condition{Reg: `text*`, Exts: []string{"txt"}, Ignore: true},
+			"root", ".", "newName", renfls.Condition{Reg: `text*`, Exts: []string{"csv"}, Ignore: true},
 			[]string{"newName.jpg"},
 			[]string{"dir/text.txt", "dir/data.csv"},
 		},
 	} {
 		createAlls(test.root, test.mockFiles)
-		defer clearTestDir()
 
 		err := renfls.WalkRename(test.root, test.dest, test.newFileName, test.condition)
 
@@ -200,19 +199,21 @@ func TestWalkRename(t *testing.T) {
 			t.Errorf("WalkRename(%v) error: %s\n", test, err)
 		}
 
-		for _, wantRenamedFileNames := range test.wantRenamedFileNames {
-			wantNewPath := filepath.Join(test.dest, wantRenamedFileNames)
-			if !isExist(wantNewPath) {
-				t.Errorf("The new path %q didn't be created.\n", wantNewPath)
+		for _, fileName := range test.wantRenamedFileNames {
+			path := filepath.Join(test.dest, fileName)
+			if !isFileExist(path) {
+				t.Errorf("The new path %q didn't be created.\n", path)
 			}
 		}
 
-		for _, wantIgnoredFileNames := range test.wantIgnoredFileNames {
-			wantNewPath := filepath.Join(test.dest, wantIgnoredFileNames)
-			if isExist(wantNewPath) {
-				t.Errorf("The path not matched %q is created.\n", wantNewPath)
+		for _, fileName := range test.wantIgnoredFileNames {
+			path := filepath.Join(test.root, fileName)
+			if !isFileExist(path) {
+				t.Errorf("The path %q is not in ignore directory.\n", path)
 			}
 		}
+
+		clearTestDir()
 	}
 }
 

@@ -82,20 +82,24 @@ func WalkRename(root, dest, newFileName string, condition Condition) error {
 	}
 
 	isMatch := func(info os.FileInfo) bool {
-		if condition.Reg != "" && !reg.MatchString(info.Name()) {
-			return false
+		if reg == nil && (condition.Exts == nil || len(condition.Exts) == 0) {
+			return true
 		}
-		if condition.Exts != nil && len(condition.Exts) == 0 && !hasExt(info.Name(), condition.Exts) {
-			return false
+		if reg != nil && reg.MatchString(info.Name()) {
+			return true
 		}
-		return true
+		if condition.Exts != nil && len(condition.Exts) > 0 && hasExt(info.Name(), condition.Exts) {
+			return true
+		}
+		return false
 	}
 
 	return walkRename(root, dest, newFileName, func(info os.FileInfo) bool {
 		if condition.Ignore {
 			return !isMatch(info)
+		} else {
+			return isMatch(info)
 		}
-		return isMatch(info)
 	})
 }
 
